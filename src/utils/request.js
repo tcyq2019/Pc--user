@@ -18,13 +18,15 @@ const _Message = Message // 必须定义新的名称, 否则会报错
 // 创建一个新的axios
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API, // url = base url + request url
-  
+
   timeout: 20000 //请求超时时间
 })
 
 // 请求拦截器
 service.interceptors.request.use(
+
   config => {
+
     // 如果有token, 通过token请求头携带token
     if (store.getters.token) {
       config.headers['token'] = getToken()
@@ -36,13 +38,13 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
-    
+
     const result = response.data
-    /* 
+    /*
     code为非20000或200是抛错 可结合自己业务进行修改
     */
     if (result.code !== 20000 && result.code !== 200) {
-      if (result.code===201) { // 删除商品相关的系统数据时, 错误信息保存在了data上
+      if (result.code === 201) { // 删除商品相关的系统数据时, 错误信息保存在了data上
         _Message.error(result.data || '未知错误')
       } else {
         _Message.error(result.message || '未知错误')
