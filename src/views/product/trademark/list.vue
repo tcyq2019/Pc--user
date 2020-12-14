@@ -1,15 +1,13 @@
 <template>
   <div>
-    <el-button type="primary" icon="el-icon-plus" @click="Visible = true"
-      >添加</el-button
-    >
+    <el-button type="primary" icon="el-icon-plus" @click="add">添加</el-button>
 
     <el-table :data="trademarkList" border style="width: 100%; margin: 20px 0">
       <el-table-column type="index" label="序号" width="80" align="center">
       </el-table-column>
       <el-table-column prop="tmName" label="品牌名称"> </el-table-column>
       <el-table-column label="品牌LOGO">
-        <template slot-scope="scope">
+        <template v-slot="scope">
           <!-- {{ JSON.stringify(scope) }} -->
           <!--
             scope代表所有数据
@@ -19,14 +17,17 @@
         </template>
       </el-table-column>
       <el-table-column label="操作">
-        <template slot-scope="scope">
-          <el-button type="warning" icon="el-icon-edit"
-          @click="putTradeMark"
-          >修改</el-button>
+        <template v-slot="{ row }">
+          <el-button
+            type="warning"
+            icon="el-icon-edit"
+            @click="putTradeMark(row)"
+            >修改</el-button
+          >
           <el-button
             type="danger"
             icon="el-icon-delete"
-            @click="delTradeMark(scope.row.id)"
+            @click="delTradeMark(row.id)"
             >删除</el-button
           >
         </template>
@@ -45,7 +46,11 @@
     >
     </el-pagination>
 
-    <el-dialog title="添加品牌" :visible.sync="Visible" width="50%">
+    <el-dialog
+      :title="`${trademarkForm.id ? '修改' : '添加'}品牌`"
+      :visible.sync="Visible"
+      width="50%"
+    >
       <el-form
         :model="trademarkForm"
         ref="trademarkForm"
@@ -111,26 +116,117 @@ export default {
         logoUrl: '',
       },
       rules: {
-        tmName: [{ required: true, message: '请输入品牌名称' }],
+        tmName: [
+          {
+            /* required: true, message: '请输入品牌名称' */
+            validator: this.validator,
+            trigger: 'blur',
+          },
+        ],
         logoUrl: [{ required: true, message: '请上传品牌LOGO' }],
       },
     }
   },
   methods: {
+    validator(rule, value, callback) {
+      /*
+      rule校验的名字
+      value 校验的字段直
+      callback 决定表单校验成功/失败
+      */
+      if (!value) {
+        callback(new Error('请输入品牌名称'))
+        return
+      } else if (value.length < 2 || value.length > 10) {
+        callback(new Error('输入品牌名称的长度为2-10位'))
+        return
+      }
+      /* callback里面如果是写的error就是错误回调 如果是callback()就是成功回调 */
+      callback()
+    },
+    add() {
+      this.$refs.trademarkForm && this.$refs.trademarkForm.clearValidate()
+      this.Visible = true
+      this.trademarkForm = {
+        tmName: '',
+        logoUrl: '',
+      }
+    },
+    putTradeMark(row) {
+      this.Visible = true
+      this.trademarkForm = { ...row }
+    },
     //删除
-    async delTradeMark(id) {
+    /* 第一种方法 async delTradeMark(id) {
       if (window.confirm('您确定删除该品牌吗?')) {
         await this.$API.trademark.deleteTradmark(id)
-        console.log(id);
+        console.log(id)
       }
-       this.getPageList(this.page, this.limit)
+      this.getPageList(this.page, this.limit)
+      this.$message({
+        type:"success",
+        message:"删除成功"
+      })
+    }, */
+    /* 老师方法 */
+    delTradeMark(row) {
+      this.$confirm(`确定删除${row.tmName}吗？`, '提示', {
+        type: 'warning',
+      })
+        .then(async () => {
+          //点击确定的回调
+          //发送删除品牌的请求
+          const result = await this.$API.trademark.deleteTradmark(row.id)
+          //如果成功了，提示成功，重新获取列表（那一页)
+          this.$message({
+            type: 'success',
+            message: '删除成功',
+          })
+          //那一页？显示上一页（删除时当前列表数据只剩一页）否则显示当前列表数据
+          //如果当前是第一页并且只剩下一条数据==>去请求的第一页的数据（也就是当前页）
+          this.getPageList(
+            this.trademarkList.length === 1 && this.page > 1
+              ? this.page - 1
+              : this.page,
+            this.limit
+          )
+        })
+        .catch((error) => {
+          if (error === 'cancel') {
+            this.$message({
+              type: 'info',
+              message: '已经取消删除',
+            })
+          }
+        })
     },
-   /*  submitForm(form) {
+
+    submitForm(form) {
+      //校验表单
       this.$refs[form].validate(async (valid) => {
         if (valid) {
-          const result = await this.$API.trademark.addTrademark(
-            this.trademarkForm
-          )
+          const { trademarkForm } = this
+          const isUpdata = !!trademarkForm.id
+          if (isUpdata) {
+            const tm = this.trademarkList.find(
+              (tm) => tm.id === trademarkForm.id
+            )
+            if (
+              tm.tmName === trademarkForm.tmName &&
+              tm.logoUrl === trademarkForm.logoUrl
+            ) {
+              this.$message.warning('不能提交与之前一样的额数据')
+              return
+            }
+          }
+          //表单验证
+          //发送请求
+          let result
+          if (isUpdata) {
+            result = await this.$API.trademark.updateTrademark(trademarkForm)
+          } else {
+            result = await this.$API.trademark.addTrademark(trademarkForm)
+          }
 
           if (result.code === 200) {
             this.$message.success('添加品牌数据成功')
@@ -141,34 +237,14 @@ export default {
           }
         }
       })
-    }, */
-    submitForm(form){
-      //校验表单
-      this.$refs[form].validate(async(valid)=>{
-        if(valid){
-          //表单验证
-          //console.log(this.trademarkForm)
-          //发送请求
-          const result = await this.$API.trademark.addTrademark(
-            this.trademarkForm
-          );
-          if(result.code === 200){
-            this.$message.success("添加品牌数据成功");
-            this.Visible = false;
-            this.getPageList(this.page,this.limit);
-          }else{
-            this.$message.error(result.message);
-          }
-        }
-      })
     },
     //上传图片成功的回调
 
-   /*  handleAvatarSuccess(res) {
+    /*  handleAvatarSuccess(res) {
       this.trademarkForm.logoUrl = res.data
       console.log(res)
     }, */
-    handleAvatarSuccess(res){
+    handleAvatarSuccess(res) {
       this.trademarkForm.logoUrl = res.data
     },
     //上传图片之前的回调

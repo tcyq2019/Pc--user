@@ -26,13 +26,11 @@ export default {
   /*
   修改品牌
   */
-  updateTrademark (banner) {
+  updateTrademark (data) {
     return request({
       url: `${api_name}/update`,
       method: 'PUT',
-      data: {
-        banner
-      }
+      data
     })
   },
   /*
