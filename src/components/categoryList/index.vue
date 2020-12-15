@@ -53,7 +53,7 @@
 <script>
 export default {
   name: 'category',
-  props:['disabled'],
+  props:['disabled','clearList '],
   data() {
     return {
       category: {
@@ -77,6 +77,7 @@ export default {
       } else {
         this.$message.error(result.message)
       }
+       this.$bus.$emit("clearList");
     },
     async handleSelectChange2(category2Id) {
       this.category3List = []
@@ -87,13 +88,14 @@ export default {
       } else {
         this.$message.error(result.message)
       }
+      this.$bus.$emit("clearList");
     },
     async handleSelectChange3(category3Id) {
       const category = {
         ...this.category,
         category3Id,
       }
-       this.$emit('change',category)
+       this.$bus.$emit('change',category)
 
     },
   },

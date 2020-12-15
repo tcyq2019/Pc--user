@@ -1,8 +1,18 @@
 <template>
   <div>
-    <Category @change="getAttrList" :disabled="!isShowList" />
+    <Category
+      @change="getAttrList"
+      :disabled="!isShowList"
+      :clearList="clearList"
+    />
     <el-card v-show="isShowList" style="margin-top: 20px">
-      <el-button type="primary" icon="el-icon-plus">添加属性</el-button>
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        :disabled="!category.category3Id"
+        @click="addList"
+        >添加属性**</el-button
+      >
 
       <el-table :data="attrList" border style="width: 100%; margin: 20px 0">
         <el-table-column type="index" label="序号" width="80" align="center">
@@ -32,6 +42,7 @@
               type="danger"
               icon="el-icon-delete"
               size="mini"
+              @click="delAttr(row.id)"
             ></el-button>
           </template>
         </el-table-column>
@@ -44,8 +55,12 @@
           <el-input v-model="attr.attrName"></el-input>
         </el-form-item>
       </el-form>
-      <el-button type="primary" icon="el-icon-plus" @click="addValueList"
-        >添加属性</el-button
+      <el-button
+        type="primary"
+        icon="el-icon-plus"
+        @click="addValueList"
+        :disabled="!attr.attrName"
+        >添加属性值</el-button
       >
 
       <el-table
@@ -106,20 +121,46 @@
 </template>
 
 <script>
-import Category from './category'
+import Category from '../../../components/categoryList'
 export default {
   name: 'AttrList',
   data() {
     return {
       attrList: [],
       isShowList: true,
+
       attr: {
         attrName: '',
         attrValueList: [],
       },
+      category: {
+        category1Id: '',
+        category2Id: '',
+        category3Id: '',
+      },
     }
   },
   methods: {
+    //在你再次选择上面的三级按钮的时候，清空下面的数据
+    clearList() {
+      //直接清空数据
+      this.attrList = []
+      //禁用按钮
+      this.category.category3Id = ''
+    },
+    //添加属性按钮操作
+    addList() {
+      ;(this.isShowList = false), (this.attr.attrValueList = [])
+    },
+    deleteAttr(id) {
+      const result = this.$API.attrs.deleteAttr(id)
+      if (result.code === 200) {
+        this.$message.success('删除成功')
+        this.getAttrList()
+      } else {
+        this.$message.error('失败')
+      }
+    },
     //处理添加属性为空的bug
     editCoponent(row, index) {
       if (!row.valueName) {
@@ -129,7 +170,18 @@ export default {
       row.edit = false
     },
     //保存所有属性
+    //需要判断我们这里面是应该请求的添加的值 还是保存的值
     async save() {
+      //判断是否添加
+      const isAdd = !this.attr.id
+      const data = this.attr
+      if (isAdd) {
+        // this.attr里面只有attrName和attrValueList
+        // 还需要categoryId和categoryLevel
+        data.categoryId = this.category.category3Id
+        data.categoryLevel = 3
+      }
+      //修改
       const result = await this.$API.attrs.saveAttrInfo(this.attr)
       if (result.code === 200) {
         this.$message.success('跟新属性成功')
@@ -174,7 +226,7 @@ export default {
       console.log(result)
       if (result.code === 200) {
         this.attrList = result.data
-      } else {
+      } else if (category === '') {
         this.$message.error(result.message)
       }
     },
