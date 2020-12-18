@@ -121,6 +121,7 @@
 </template>
 
 <script>
+import { mapState } from "vuex"
 import Category from '../../../components/categoryList'
 export default {
   name: 'AttrList',
@@ -133,14 +134,35 @@ export default {
         attrName: '',
         attrValueList: [],
       },
-      category: {
+      /* category: {
         category1Id: '',
         category2Id: '',
         category3Id: '',
-      },
+      }, */
     }
   },
+    computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+  watch: {
+    'category.category3Id'(category3Id) {
+      if(!category3Id) return
+      this.getAttrList()
+    },
+    'category.category1Id'() {
+      this.clearList()
+    },
+    'category.category2Id'() {
+      this.clearList()
+    },
+  },
   methods: {
+   async delAttr(id){
+     await this.$API.attrs.deleteAttr(id)
+      this.getAttrList()
+    },
     //在你再次选择上面的三级按钮的时候，清空下面的数据
     clearList() {
       //直接清空数据
@@ -186,7 +208,7 @@ export default {
       if (result.code === 200) {
         this.$message.success('跟新属性成功')
         this.isShowList = true
-        this.getAttrList(this.category)
+        this.getAttrList()
       } else {
         this.$message.error(result.message)
       }
@@ -220,9 +242,8 @@ export default {
       this.isShowList = false
     },
 
-    async getAttrList(category) {
-      this.category = category
-      const result = await this.$API.attrs.getAttrList(category)
+    async getAttrList() {
+      const result = await this.$API.attrs.getAttrList(this.category)
       console.log(result)
       if (result.code === 200) {
         this.attrList = result.data

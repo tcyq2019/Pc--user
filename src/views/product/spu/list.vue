@@ -1,33 +1,55 @@
 <template>
-<div>
-  <Category />
-  <SpuList v-if="isShowList" @showUpdateList="showUpdateList"/>
-  <SpuUpdataList v-else :item="item" />
-</div>
+  <div>
+    <SkuList v-if="isShowSkuList" :skuItem="skuItem" />
+    <div v-else>
+      <Category :disabled="!isShowList" />
+      <SpuList
+        v-if="isShowList"
+        @showUpdateList="showUpdateList"
+        @showSpuList="showSpuList"
+      />
+      <SpuUpdataList v-else :item="item" @showList="showList" />
+    </div>
+  </div>
 </template>
 
 <script>
-import Category from "@/components/categoryList"
-import SpuList from "./spuList"
-import SpuUpdataList from "./spuUpdataList"
+import Category from '@/components/categoryList'
+import SpuList from './spuList'
+import SpuUpdataList from './spuUpdataList'
+import SkuList from './skuList'
 export default {
   name: 'list',
-  data(){
-    return{
-      isShowList:true,
-      item:{},
+  data() {
+    return {
+      isShowList: true,
+      item: {},
+      isShowSkuList: false,
+      skuItem: {},
     }
   },
-  methods:{
-    showUpdateList(row){
-      this.isShowList = false;
-      this.item={...row}
-    }
+  methods: {
+    showSpuList(row) {
+      this.isShowSkuList = true
+      this.skuItem = { ...row }
+    },
+    showUpdateList(row) {
+      this.isShowList = false
+      this.item = { ...row }
+      console.log(row)
+    },
+    showList(category3Id) {
+      this.isShowList = true
+     /*  this.$nextTick(() => {
+        this.$bus.$emit('change', { category3Id })
+      }) */
+    },
   },
-  components:{
+  components: {
     Category,
     SpuList,
-    SpuUpdataList
-  }
+    SpuUpdataList,
+    SkuList,
+  },
 }
 </script>

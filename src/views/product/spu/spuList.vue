@@ -1,26 +1,38 @@
 <template>
   <el-card style="margin-top: 20px">
-    <el-button type="primary" icon="el-icon-plus">添加SPU</el-button>
+    <el-button
+      type="primary"
+      icon="el-icon-plus"
+      @click="$emit('showUpdateList', { category3Id: category.category3Id } )"
+      :disabled="!category.category3Id"
+      >添加SPU</el-button
+    >
 
     <el-table :data="spuList" border style="width: 100%; margin: 20px 0">
       <el-table-column type="index" label="序号" width="80" align="center">
       </el-table-column>
-      <el-table-column prop="spuName" label="SPU名称">
-      </el-table-column>
+      <el-table-column prop="spuName" label="SPU名称"> </el-table-column>
       <el-table-column prop="description" label="SPU描述"> </el-table-column>
       <el-table-column label="操作">
-        <template slot-scope="{row}">
-          <el-button type="primary" icon="el-icon-plus" size="mini"></el-button>
-          <el-button type="primary"
-           icon="el-icon-edit"
+        <template slot-scope="{ row }">
+          <el-button
+            type="primary"
+            icon="el-icon-plus"
             size="mini"
-            @click="$emit('showUpdateList',row)"
-            ></el-button>
+            @click="$emit('showSpuList', { ...row, ...category })"
+          ></el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-edit"
+            size="mini"
+            @click="$emit('showUpdateList', row)"
+          ></el-button>
           <el-button type="info" icon="el-icon-edit" size="mini"></el-button>
           <el-button
             type="danger"
             icon="el-icon-delete"
             size="mini"
+            @click="deleteSpuValue(row.id)"
           ></el-button>
         </template>
       </el-table-column>
@@ -39,6 +51,7 @@
   </el-card>
 </template>
 <script>
+import { mapState } from 'vuex'
 export default {
   name: 'spuList',
   data() {
@@ -46,16 +59,44 @@ export default {
       page: 1,
       limit: 3,
       total: 0,
-      category: {
+      /*  category: {
         category1Id: '',
         category2Id: '',
         category3Id: '',
-      },
+      }, */
       spuList: [],
       loading: false,
+      isdone:false
     }
   },
+  computed: {
+    ...mapState({
+      category: (state) => state.category.category,
+    }),
+  },
+  watch: {
+    'category.category3Id':{
+        handler(category3Id) {
+      if(!category3Id) return
+      this.handleCategoryChange()
+
+    },
+    immediate:true//代表一上来就触发一次
+    },
+    'category.category1Id'() {
+      this.clearList()
+    },
+    'category.category2Id'() {
+      this.clearList()
+    },
+  },
   methods: {
+    //删除当前spu数据
+    async deleteSpuValue(id) {
+      await this.$API.spu.deleteSpu(id)
+      this.getPageList(this.page, this.limit)
+    },
+
     //获取SPU分页列表
     async getPageList(page, limit) {
       const { category3Id } = this.category
@@ -66,9 +107,10 @@ export default {
       })
       if (result.code === 200) {
         this.$message.success('获取SPU分页列表成功')
-        console.log(1111)
-        console.log(result.data.records)
+        //console.log(1111)
+        //console.log(result.data.records)
         this.spuList = result.data.records
+        //console.log(this.spuList)
         this.total = result.data.total
       } else {
         this.$message.error(result.message)
@@ -86,17 +128,16 @@ export default {
       this.page = 1
       this.limit = 3
       this.total = 0
-      this.category.category3Id = ''
     },
   },
   mounted() {
-    this.$bus.$on('change', this.handleCategoryChange)
-    this.$bus.$on('clearList', this.clearList)
+    //this.$bus.$on('change', this.handleCategoryChange)
+   // this.$bus.$on('clearList', this.clearList)
   },
-  beforeDestroy(){
-     this.$bus.$off('change', this.handleCategoryChange)
-    this.$bus.$off('clearList', this.clearList)
-  }
+  beforeDestroy() {
+    //this.$bus.$off('change', this.handleCategoryChange)
+   // this.$bus.$off('clearList', this.clearList)
+  },
 }
 </script>
 <style lang="sass" scoped>
